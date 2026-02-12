@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Election Dashboard</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1d2671, #c33764);
+    color: white;
+    text-align: center;
+}
+
+h1 {
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 15px;
+    transition: 0.3s;
+}
+
+.card.leader {
+    border: 2px solid gold;
+    transform: scale(1.05);
+}
+
+.rank {
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.name {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.votes {
+    font-size: 18px;
+    margin: 8px 0;
+}
+
+.bar {
+    height: 12px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    width: 0%;
+    background: #00ffcc;
+    transition: width 0.8s ease-in-out;
+}
+
+.total {
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.updated {
+    margin-top: 10px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🗳 Live Election Result</h1>
+<div class="container" id="results"></div>
+<div class="total" id="totalVotes"></div>
+<div class="updated" id="updatedTime"></div>
+
+<script>
+async function loadData() {
+    try {
+        const res = await fetch("/api/live");
+        const data = await res.json();
+
+        const candidates = data.data || data;
+
+        // sort descending
+        candidates.sort((a,b) => b.vote - a.vote);
+
+        let totalVotes = 0;
+        candidates.forEach(c => totalVotes += c.vote);
+
+        const container = document.getElementById("results");
+        container.innerHTML = "";
+
+        candidates.forEach((c, index) => {
+
+            const percent = ((c.vote / totalVotes) * 100).toFixed(1);
+
+            container.innerHTML += `
+                <div class="card ${index===0 ? 'leader' : ''}">
+                    <div class="rank">Rank #${index+1}</div>
+                    <div class="name">${c.name}</div>
+                    <div class="votes">${c.vote} Votes (${percent}%)</div>
+                    <div class="bar">
+                        <div class="fill" style="width:${percent}%"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById("totalVotes").innerText =
+            "Total Votes: " + totalVotes;
+
+        document.getElementById("updatedTime").innerText =
+            "Last Updated: " + new Date().toLocaleTimeString();
+
+    } catch (err) {
+        document.getElementById("results").innerHTML = "Failed to load data";
+    }
+}
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+
+</body>
+</html>
